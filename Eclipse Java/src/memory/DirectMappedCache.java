@@ -2,6 +2,8 @@ package memory;
 
 import java.util.ArrayList;
 
+
+
 import util.Utils;
 
 //
@@ -70,7 +72,7 @@ public class DirectMappedCache implements Memory {
       stats.reads.add(true, operationTime);
     } else {
       // miss
-    if(entry.isdirty==true) {	
+    if(entry.isdirty) {	
     	memory.write(toAddress(entry.tag,toIndex(address)),entry.value);
     	entry.isdirty=false;
     }	
@@ -118,8 +120,10 @@ public class DirectMappedCache implements Memory {
     
 	  
 	  Entry entry = entries.get(toIndex(address));
+	  System.out.println("test1:"+entry.value);
 	  
 	  if(entry.isdirty && entry.tag!=toTag(address)) {
+		  System.out.println(entry.value);
 		  memory.write(toAddress(entry.tag,toIndex(address)),entry.value);
 		  
 	  }else {
@@ -133,7 +137,17 @@ public class DirectMappedCache implements Memory {
 	  
 	  
   }
-
+  public void fflush()
+  {
+	  for(Entry en:entries){
+		  if(en.isdirty==true)
+		  {
+			 memory.write(toAddress((en.tag),entries.indexOf(en)), en.value);
+		  }
+		  
+	  }
+	  
+  }
   @Override
   public int getOperationTime() {
     return operationTime;

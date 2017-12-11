@@ -2,6 +2,8 @@ package test;
 
 import java.util.Random;
 
+import com.sun.media.sound.FFT;
+
 import memory.DirectMappedCache;
 import memory.MainMemory;
 import memory.Memory;
@@ -175,7 +177,7 @@ public class Test {
     memory.write(0, array);
 
     selectionSort(cache, 0, array.length);
-
+    cache.fflush();
     System.out.println("array=" + memory.dump(0, array.length));
     System.out.println("cache  stats: " + cache.getStats());
     System.out.println("memory stats: " + memory.getStats());
