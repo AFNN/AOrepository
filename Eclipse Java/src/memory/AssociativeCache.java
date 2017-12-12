@@ -1,5 +1,6 @@
 package memory;
 
+import java.sql.Time;
 import java.util.ArrayList;
 
 	import util.Utils;
@@ -7,11 +8,12 @@ import java.util.ArrayList;
 	//
 	// CACHE ENTRY
 	
-	class EntryA {
+	class AssociativeEntry {
 	  int value;        // the line's word (1 cache-line = 1 word)
-	  int tag;          // the line's tag
+	  int address;          // the line's address
 	  boolean isValid;  // the validity bit
 	  boolean isdirty=false ; // dirty bit. Il signale que l’entrée contient une donnée dont la valeur est plus récente en cache qu’en mémoire
+	  
 	}
 	
 
@@ -21,12 +23,9 @@ import java.util.ArrayList;
 	  // ATTRIBUTES
 	  //
 	  
-	  private final ArrayList<Entry> entries;	
+	  private final ArrayList<AssociativeEntry> entries;	
 	  private final int accessTime;
 	  private final Memory memory;
-
-	  private final int indexWidth;
-	  private final int indexMask;
 
 	  private int operationTime;
 	  private final Stats stats;
@@ -44,15 +43,11 @@ import java.util.ArrayList;
 	    if (memory == null) {
 	      throw new NullPointerException("memory");
 	    }
-	    indexWidth = Utils.log(size);
-	    if (indexWidth == -1) {
-	      throw new IllegalArgumentException("size");
-	    }
-	    this.indexMask = Utils.mask(indexWidth);
+	    
 
 	    this.entries = new ArrayList<>(size);
 	    for (int i = 0; i < size; i++) {
-	      entries.add(new Entry());
+	      entries.add(new AssociativeEntry());
 	    }
 	    this.accessTime = accessTime;
 	    this.memory = memory;
@@ -65,31 +60,63 @@ import java.util.ArrayList;
 	  //
 	  @Override
 	  public int read(int address) {
-	    Entry entry = entries.get(toIndex(address));
-	    if (entry.isValid && entry.tag == toTag(address)) {
-	      // hit
-	      operationTime = accessTime;
-	      stats.reads.add(true, operationTime);
-	    } else {
-	      // miss
-	    if(entry.isdirty) {	
-	    	memory.write(toAddress(entry.tag,toIndex(address)),entry.value);
-	    	entry.isdirty=false;
-	    }	
-	      entry.value = memory.read(address);
-	      entry.tag = toTag(address);
-	      entry.isValid = true;  
-	      operationTime = memory.getOperationTime() + accessTime;
-	      stats.reads.add(false, operationTime);
-	    }
-	    return entry.value;
+	   return readFIFO(address);
 	  }
 
 	  @Override
 	  public void write(int address, int value) {
 	    
 	  }
-
+	  
+	  
+	  public int readFIFO(int address) {
+		  AssociativeEntry entry = entries.get(address);
+		    if (entry.isValid && entry.address == address) {
+		    	// hit
+		    	operationTime = accessTime;
+		    	stats.reads.add(true, operationTime);
+		    } 
+		    else {
+		    	// miss	    	
+		    	if(entry.isdirty) {	
+		    		memory.write(entry.address,entry.value);
+		    		entry.isdirty=false;
+		    	}	
+		    	entry.value = memory.read(address);
+		    	entry.address = address;
+		    	entry.isValid = true;
+		    	//rajoute l'objet entry a la derniere ligne 
+		    	entries.remove(0);
+		    	entries.add(entry);
+		    	operationTime = memory.getOperationTime() + accessTime;
+		    	stats.reads.add(false, operationTime);
+		    }
+		    return entry.value;
+	  }
+	  
+	  
+	  
+	  public void writeFIFO(int address, int value) {
+		  
+		  AssociativeEntry entry= getEntries(address);
+		  
+		  if(entry==null) {
+			  AssociativeEntry entryStc =entries.get(0);
+			  memory.write(entryStc.address,entryStc.value);
+			  entries.remove(0);
+			  
+		  }
+		  else {			  
+			  entry.value=value;
+			  entry.isdirty=true;
+			  entry.isValid=true;
+			  entry.address=address;
+		  }
+	  }
+	  public void readLRU(int a , int b ) {
+		  
+		  
+	  }
 	@Override
 	public int getOperationTime() {
 		// TODO Auto-generated method stub
@@ -105,16 +132,24 @@ import java.util.ArrayList;
 	  //
 	  // UTILITIES
 	  //
-	  private int toIndex(int address) {
-	    return address & indexMask;
-	  }
-
-	  private int toTag(int address) {
-	    return address >> indexWidth;
-	  }
-
-	  private int toAddress(int tag, int index) {
-	    return (tag << indexWidth) + index;
-	  }
-
+	  
+	private AssociativeEntry getEntries(int address ) {
+		AssociativeEntry entrie=new AssociativeEntry();
+		for(AssociativeEntry en:entries){
+			if(en.address==address && en.isValid==true) {
+				entrie.address=en.address;
+				entrie.isValid=en.isValid;
+				entrie.isdirty=en.isdirty;
+				entrie.value=en.value;
+			}
+			else {
+				entrie=null;
+				
+			}
+		}
+		
+		return  entrie;
+	}
+	  
+	 
 	}
