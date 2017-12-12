@@ -59,27 +59,29 @@ public class AssociativeCache implements Memory {
 	//
 	@Override
 	public int read(int address) {
-		
-		return readLRU(address);
+
+		//return readLRU(address);
+		return readFIFO(address);
 	}
 
 	@Override
 	public void write(int address, int value) {
-		writeLRU(address, value);
+		//writeLRU(address, value);
+		writeFIFO(address, value);
 	}
 
 	public int readFIFO(int address) {
-		
+		boolean hit = true;
 		AssociativeEntry entry = new AssociativeEntry();
 		entry = getEntries(address);
 
 		if (entry != null) {
 			// hit
 			operationTime = accessTime;
-			stats.reads.add(true, operationTime);
+
 		} else {
 			// miss
-
+			hit = false;
 			AssociativeEntry entryStc = entries.get(0);
 			if (entryStc.isdirty == true) {
 				memory.write(entryStc.address, entryStc.value);
@@ -92,32 +94,39 @@ public class AssociativeCache implements Memory {
 			entries.remove(0);
 			// rajoute l'objet entry a la derniere ligne
 			entries.add(entryStc);
-			operationTime = memory.getOperationTime() + accessTime;
-			stats.reads.add(false, operationTime);
 			entry = entryStc;
+			operationTime = memory.getOperationTime() + accessTime;
 		}
 
+		stats.reads.add(hit, operationTime);
 		return entry.value;
+
 	}
 
 	public void writeFIFO(int address, int value) {
-
+		boolean hit = true;
 		AssociativeEntry entry = getEntries(address);
 
 		if (entry == null) {
 			AssociativeEntry entryStc = entries.get(0);
-			memory.write(entryStc.address, entryStc.value);
+			if (entryStc.isdirty == true) {
+				memory.write(entryStc.address, entryStc.value);
+			}
 			entries.remove(0);
-
-		} else {
-			entry.value = value;
-			entry.isdirty = true;
-			entry.isValid = true;
-			entry.address = address;
+			operationTime += memory.getOperationTime();
+			hit = false;
 		}
+		entry.value = value;
+		entry.isdirty = true;
+		entry.isValid = true;
+		entry.address = address;
+		operationTime += accessTime;
+		stats.writes.add(hit, operationTime);
+
 	}
 
 	public int readLRU(int address) {
+		boolean hit = true;
 		AssociativeEntry entry = getEntries(address);
 		if (entry != null) {
 			// hit
@@ -126,9 +135,10 @@ public class AssociativeCache implements Memory {
 			// rajoute la valeur a la derniere ligne
 			entries.add(entry);
 			operationTime = accessTime;
-			stats.reads.add(true, operationTime);
+
 		} else {
 			// miss
+			hit = false;
 			AssociativeEntry entryStc = entries.get(0);
 			memory.write(entryStc.address, entryStc.value);
 			// supprimer l'entree la plus agee
@@ -139,31 +149,37 @@ public class AssociativeCache implements Memory {
 			// rajoute l'objet entry a la derniere ligne
 			entries.add(entryStc);
 			operationTime = memory.getOperationTime() + accessTime;
-			stats.reads.add(false, operationTime);
-			entry=entryStc;
+
+			entry = entryStc;
 		}
+		stats.reads.add(hit, operationTime);
 		return entry.value;
 	}
 
 	public void writeLRU(int address, int value) {
+		boolean hit = true;
 		AssociativeEntry entry = getEntries(address);
 
 		if (entry == null) {
+			hit = false;
 			AssociativeEntry entryStc = entries.get(0);
-			memory.write(entryStc.address, entryStc.value);
+			if (entryStc.isdirty == true) {
+				memory.write(entryStc.address, entryStc.value);
+				operationTime = memory.getOperationTime();
+			}
 			entries.remove(0);
-
-		} else {
-			// supprimer la la donnee situé a un index dans la liste entries
-			entries.remove(entry);
-			// modifie les valeurs de la donnée
-			entry.value = value;
-			entry.isdirty = true;
-			entry.isValid = true;
-			entry.address = address;
-			// rajoute la valeur a la derniere ligne
-			entries.add(entry);
 		}
+		// supprimer la la donnee situé a un index dans la liste entries
+		entries.remove(entry);
+		// modifie les valeurs de la donnée
+		entry.value = value;
+		entry.isdirty = true;
+		entry.isValid = true;
+		entry.address = address;
+		// rajoute la valeur a la derniere ligne
+		entries.add(entry);
+		operationTime += accessTime;
+		stats.reads.add(hit, operationTime);
 	}
 
 	public void fflush() {
@@ -182,7 +198,7 @@ public class AssociativeCache implements Memory {
 
 	@Override
 	public Stats getStats() {
-		
+
 		return stats;
 	}
 

@@ -87,9 +87,9 @@ public class DirectMappedCache implements Memory {
 
   @Override
   public void write(int address, int value) {
-    //writeAround(address, value);
+    writeAround(address, value);
     //writeThrough(address, value);
-    writeBack(address, value);
+    //writeBack(address, value);
   }
 
   private void writeAround(int address, int value) {
@@ -98,7 +98,7 @@ public class DirectMappedCache implements Memory {
       entry.isValid = false;
     }
     memory.write(address, value);
-    operationTime = memory.getOperationTime() + accessTime;
+    operationTime = memory.getOperationTime();
     stats.writes.add(false, operationTime);
   }
 
@@ -123,7 +123,7 @@ public class DirectMappedCache implements Memory {
 	  // miss
 	  if(entry.isdirty && entry.tag!=toTag(address)) {		  
 		  memory.write(toAddress(entry.tag,toIndex(address)),entry.value);		
-		  operationTime += memory.getOperationTime() + accessTime;
+		  operationTime += memory.getOperationTime();
 		  hit = false;
 	  }
 	  //hit
