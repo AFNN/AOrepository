@@ -87,9 +87,9 @@ public class DirectMappedCache implements Memory {
 
   @Override
   public void write(int address, int value) {
-    writeAround(address, value);
+    //writeAround(address, value);
     //writeThrough(address, value);
-    //writeBack(address, value);
+    writeBack(address, value);
   }
 
   private void writeAround(int address, int value) {

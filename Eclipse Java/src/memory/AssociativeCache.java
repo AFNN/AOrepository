@@ -60,14 +60,14 @@ public class AssociativeCache implements Memory {
 	@Override
 	public int read(int address) {
 
-		//return readLRU(address);
-		return readFIFO(address);
+		return readLRU(address);
+		//return readFIFO(address);
 	}
 
 	@Override
 	public void write(int address, int value) {
-		//writeLRU(address, value);
-		writeFIFO(address, value);
+		writeLRU(address, value);
+		//writeFIFO(address, value);
 	}
 
 	public int readFIFO(int address) {
