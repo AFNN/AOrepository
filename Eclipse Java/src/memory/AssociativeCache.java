@@ -70,23 +70,22 @@ import java.util.ArrayList;
 	  
 	  
 	  public int readFIFO(int address) {
-		  AssociativeEntry entry = entries.get(address);
-		    if (entry.isValid && entry.address == address) {
+		  AssociativeEntry entry = getEntries(address);
+		    if (entry !=null) {
 		    	// hit
 		    	operationTime = accessTime;
 		    	stats.reads.add(true, operationTime);
 		    } 
 		    else {
 		    	// miss	    	
-		    	if(entry.isdirty) {	
-		    		memory.write(entry.address,entry.value);
-		    		entry.isdirty=false;
-		    	}	
+		    	AssociativeEntry entryStc =entries.get(0);
+				memory.write(entryStc.address,entryStc.value);
+				//supprimer l'entree la plus agee 
+				entries.remove(0);
 		    	entry.value = memory.read(address);
 		    	entry.address = address;
 		    	entry.isValid = true;
 		    	//rajoute l'objet entry a la derniere ligne 
-		    	entries.remove(0);
 		    	entries.add(entry);
 		    	operationTime = memory.getOperationTime() + accessTime;
 		    	stats.reads.add(false, operationTime);
@@ -113,10 +112,65 @@ import java.util.ArrayList;
 			  entry.address=address;
 		  }
 	  }
-	  public void readLRU(int a , int b ) {
-		  
-		  
+	  
+	  
+	  public int readLRU(int address ) {
+		  AssociativeEntry entry = getEntries(address);
+		    if (entry !=null) {
+		    	// hit
+		    	//supprimer la la donnee situé a un index dans la liste entries
+		    	entries.remove(entry);
+		    	//rajoute la valeur a la derniere ligne 
+		    	entries.add(entry);
+		    	operationTime = accessTime;
+		    	stats.reads.add(true, operationTime);
+		    } 
+		    else {
+		    	// miss	    	  	
+		    	AssociativeEntry entryStc =entries.get(0);
+				memory.write(entryStc.address,entryStc.value);
+				//supprimer l'entree la plus agee 
+				entries.remove(0);
+		    	entry.value = memory.read(address);
+		    	entry.address = address;
+		    	entry.isValid = true;
+		    	//rajoute l'objet entry a la derniere ligne 
+		    	entries.add(entry);
+		    	operationTime = memory.getOperationTime() + accessTime;
+		    	stats.reads.add(false, operationTime);
+		    }
+		    return entry.value;
 	  }
+	  
+	  public void writeLRU(int address,int value) {
+		  AssociativeEntry entry= getEntries(address);
+		  
+		  if(entry==null) {
+			  AssociativeEntry entryStc =entries.get(0);
+			  memory.write(entryStc.address,entryStc.value);
+			  entries.remove(0);
+			  
+		  }
+		  else {
+			//supprimer la la donnee situé a un index dans la liste entries
+		      entries.remove(entry);
+		      //modifie les valeurs de la donnée 
+			  entry.value=value;
+			  entry.isdirty=true;
+			  entry.isValid=true;
+			  entry.address=address;
+			//rajoute la valeur a la derniere ligne 
+		      entries.add(entry);
+		  }
+	  }
+	  
+		  
+		 
+	  
+	  
+	  
+	  
+	  
 	@Override
 	public int getOperationTime() {
 		// TODO Auto-generated method stub
@@ -135,6 +189,7 @@ import java.util.ArrayList;
 	  
 	private AssociativeEntry getEntries(int address ) {
 		AssociativeEntry entrie=new AssociativeEntry();
+		
 		for(AssociativeEntry en:entries){
 			if(en.address==address && en.isValid==true) {
 				entrie.address=en.address;
@@ -144,7 +199,6 @@ import java.util.ArrayList;
 			}
 			else {
 				entrie=null;
-				
 			}
 		}
 		
