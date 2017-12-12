@@ -117,24 +117,23 @@ public class DirectMappedCache implements Memory {
   }
 
   private void writeBack(int address, int value) {
-    
-	  
+   	  boolean hit = true;
+   	  
 	  Entry entry = entries.get(toIndex(address));
-	  System.out.println("test1:"+entry.value);
+	  // miss
+	  if(entry.isdirty && entry.tag!=toTag(address)) {		  
+		  memory.write(toAddress(entry.tag,toIndex(address)),entry.value);		
+		  operationTime += memory.getOperationTime() + accessTime;
+		  hit = false;
+	  }
+	  //hit
 	  
-	  if(entry.isdirty && entry.tag!=toTag(address)) {
-		  System.out.println(entry.value);
-		  memory.write(toAddress(entry.tag,toIndex(address)),entry.value);
-		  
-	  }else {
-		  
 		  entry.value=value;
 		  entry.isdirty=true;
 		  entry.isValid=true;
 		  entry.tag=toTag(address);
-	  }
-	  
-	  
+		  operationTime += accessTime;
+		  stats.writes.add(hit,operationTime);
 	  
   }
   public void fflush()
