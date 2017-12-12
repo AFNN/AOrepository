@@ -4,6 +4,7 @@ import java.util.Random;
 
 import com.sun.media.sound.FFT;
 
+import memory.AssociativeCache;
 import memory.DirectMappedCache;
 import memory.MainMemory;
 import memory.Memory;
@@ -143,13 +144,14 @@ public class Test {
   public static void main(String[] args) {
 
     MainMemory memory;
-    DirectMappedCache cache;
-
+    //DirectMappedCache cache;
+    AssociativeCache cache;
     // Exécution d'accès aléatoires en mémoire avec cache
     System.out.println("Execution d'accès aléatoire avec cache");
 
     memory = new MainMemory(1024 * 1024, 50);
-    cache = new DirectMappedCache(1024, 10, memory);
+    //cache = new DirectMappedCache(1024, 10, memory);
+    cache = new AssociativeCache(1024, 10, memory);
     randomAccesses(cache, 0, 1024 * 1024);
 
     System.out.println("cache  stats: " + cache.getStats());
@@ -172,7 +174,8 @@ public class Test {
     System.out.println("\nExecution du tri sélection avec cache");
 
     memory = new MainMemory(1024 * 1024, 50);
-    cache = new DirectMappedCache(1024, 10, memory);
+    //cache = new DirectMappedCache(1024, 10, memory);
+    cache = new AssociativeCache(1024, 10, memory);
 
     memory.write(0, array);
 
